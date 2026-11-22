@@ -783,42 +783,6 @@
       </div>
     </section>
 
-    <!-- Mathematical Principles & Formulations -->
-    <section class="card">
-      <div class="card-header">
-        <h3 class="card-title"><span>📐</span> Theoretical Foundations & Engineering Equations</h3>
-      </div>
-      <div class="formula-grid">
-        <div class="formula-card">
-          <h4>1. IEC 60255 IDMT Characteristic</h4>
-          <p style="font-size: 0.78rem; color: var(--text-secondary);">Operating time t depends on Plug Setting Multiplier (PSM = I / Ipu):</p>
-          <div class="formula-code">t = TMS × k / [ (I / Ipu)^a - 1 ]
-Standard Inverse: k = 0.14, a = 0.02
-Very Inverse:     k = 13.5, a = 1.00
-Extremely Inv.:   k = 80.0, a = 2.00</div>
-        </div>
-
-        <div class="formula-card">
-          <h4>2. Plug Setting & Coordination Point</h4>
-          <p style="font-size: 0.78rem; color: var(--text-secondary);">PS selected in 0.05 steps to withstand overload while seeing weakest fault:</p>
-          <div class="formula-code">PS = ceil((OLF × I_load / CT_pri) / 0.05) × 0.05
-Ipu = PS × CT_pri
-Critical Point: I_coord = If3_bus2 (Max seen by R2)
-t1_req = t2_coord + CTI
-TMS1 = ceil( (t1_req / t1_base) / 0.025 ) × 0.025</div>
-        </div>
-
-        <div class="formula-card">
-          <h4>3. Dynamic Induction Disk Integrator Model</h4>
-          <p style="font-size: 0.78rem; color: var(--text-secondary);">Simulates inertia and travel of electromechanical & numerical IDMT disks:</p>
-          <div class="formula-code">acc(t+dt) = acc(t) + dt / t_op(I)   [for I > Ipu]
-acc(t+dt) = max(acc(t) - dt/10, 0)  [for I <= Ipu]
-Trip condition: acc >= 1.0
-Breaker clearing: t_clear = t_trip + T_cb</div>
-        </div>
-      </div>
-    </section>
-
   </main>
 
   <!-- Modal for MATLAB Script Export -->
@@ -840,16 +804,6 @@ Breaker clearing: t_clear = t_trip + T_cb</div>
       </div>
     </div>
   </div>
-
-  <!-- App Footer -->
-  <footer class="app-footer">
-    <div>
-      <strong>IDMT Feeder Protection Lab</strong> | Developed for Course EE315 / Assignment 11
-    </div>
-    <div>
-      IEC 60255 & IEEE C37.112 Overcurrent Coordination Standard Compliant
-    </div>
-  </footer>
 
   <!-- Scripts: protection_engine.js followed by app.js -->
   <script src="protection_engine.js"></script>

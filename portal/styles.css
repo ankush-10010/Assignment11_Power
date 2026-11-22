@@ -952,41 +952,6 @@ input:checked + .toggle-slider:before {
 }
 
 /* =====================================================================
-   Formula Card & Documentation
-   ===================================================================== */
-.formula-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
-}
-
-.formula-card {
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 1rem;
-}
-
-.formula-card h4 {
-  font-size: 0.85rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  color: var(--accent-blue);
-}
-
-.formula-code {
-  font-family: var(--font-mono);
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  padding: 0.65rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.78rem;
-  margin: 0.5rem 0;
-  overflow-x: auto;
-  color: #38bdf8;
-}
-
-/* =====================================================================
    Modal Window
    ===================================================================== */
 .modal-overlay {
@@ -1057,26 +1022,9 @@ input:checked + .toggle-slider:before {
   white-space: pre;
 }
 
-/* =====================================================================
-   Footer
-   ===================================================================== */
-.app-footer {
-  background-color: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
-  padding: 1rem 1.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.76rem;
-  color: var(--text-secondary);
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: auto;
-}
-
 /* Print styles for report generation */
 @media print {
-  .app-header, .sld-toolbar, .controls-sidebar, .sim-controls-panel, .app-footer, .modal-overlay, .tab-btn {
+  .app-header, .sld-toolbar, .controls-sidebar, .sim-controls-panel, .modal-overlay, .tab-btn {
     display: none !important;
   }
   body {
