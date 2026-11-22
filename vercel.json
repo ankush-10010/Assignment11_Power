@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/portal/index.html"
+    },
+    {
+      "source": "/styles.css",
+      "destination": "/portal/styles.css"
+    },
+    {
+      "source": "/app.js",
+      "destination": "/portal/app.js"
+    },
+    {
+      "source": "/protection_engine.js",
+      "destination": "/portal/protection_engine.js"
+    },
+    {
+      "source": "/portal",
+      "destination": "/portal/index.html"
+    },
+    {
+      "source": "/portal/(.*)",
+      "destination": "/portal/$1"
+    }
+  ]
+}
