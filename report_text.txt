@@ -1,0 +1,390 @@
+Project / Assignment 11
+Feeder Protection Scheme for a 3-Bus Radial Power System
+using IDMT Overcurrent Relays
+Course: EE315
+Name: Ankush Raj
+Group: 5
+
+1
+
+Roll No.: 240002010
+
+Member: 4
+
+Date: 23 November 2026
+
+Aim
+
+To design a feeder protection scheme for a 3-bus radial power system using Inverse Definite
+Minimum Time (IDMT) overcurrent relays, to coordinate the relays so that the downstream relay
+operates first and the upstream relay acts as backup, and to verify the design using simulation
+data generated in MATLAB.
+
+2
+
+System Description
+
+The system is a radial network supplied from a single source at Bus 1. Line 1 connects Bus 1
+to Bus 2 and Line 2 connects Bus 2 to Bus 3. Loads are connected at Bus 2 and Bus 3. Relay
+R1 protects Line 1 and is located at Bus 1; relay R2 protects Line 2 and is located at Bus 2.
+R1
+∼
+
+Bus 1
+
+R2
+Bus 2
+
+Line 1
+5 km
+
+Line 2
+4 km
+
+Load 2
+
+Bus 3
+
+Load 3
+
+Figure 1: Single-line diagram of the 3-bus radial system with relays R1 and R2.
+
+Table 1: System data used in the study.
+Quantity
+
+Value
+
+System voltage
+Source short-circuit level
+Line impedance
+Line 1 length (Bus 1–Bus 2)
+Line 2 length (Bus 2–Bus 3)
+Load at Bus 2
+Load at Bus 3
+
+11 kV (line-to-line)
+250 MVA
+0.30 + j0.40 Ω/km
+5 km
+4 km
+3 MVA
+4 MVA
+
+Remark
+purely reactive source
+both lines
+ZL1 = 1.5 + j2.0 Ω
+ZL2 = 1.2 + j1.6 Ω
+
+Assumptions. Balanced three-phase system, constant-current loads, bolted (zero-resistance)
+faults, ideal CTs without saturation, and relays responding to the RMS value of the fault current.
+Only phase faults are considered.
+
+1
+
+3
+
+Theory
+
+3.1
+
+IDMT characteristic
+
+The IEC Standard Inverse characteristic is used:
+t = TMS 
+
+I
+Ipu
+
+0.14
+0.02
+
+,
+
+PSM =
+
+−1
+
+I
+,
+Ipu
+
+(1)
+
+where t is the operating time in seconds, TMS is the time multiplier setting, Ipu = PS×ICT,primary
+is the pick-up current and PSM is the plug-setting multiplier.
+
+3.2
+
+Coordination criterion
+
+For a radial feeder the relay nearest to the fault (primary) must operate first, and the upstream
+relay (backup) must wait for at least a coordination time interval (CTI):
+tR1 − tR2 ≥ CTI = 0.3 s
+
+(2)
+
+for every fault current that both relays can see. The interval is the sum of the breaker opening
+time, relay overshoot and a safety margin.
+
+4
+
+Fault Current Calculation
+
+√
+The phase voltage is Vph = 11000/ 3 = 6350.9 V and the source reactance is Xs = V 2 /Ssc =
+110002 /(250 × 106 ) = 0.484 Ω.
+Load currents.
+3 × 106
+= 157.5 A,
+3 × 11000
+IR2,load = IL3 = 209.9 A,
+
+4 × 106
+= 209.9 A,
+3 × 11000
+IR1,load = IL2 + IL3 = 367.4 A.
+
+IL2 = √
+
+IL3 = √
+
+(3)
+(4)
+
+Three-phase fault at Bus 2 (i.e. just beyond R2).
+Z = jXs + ZL1 = 1.5 + j2.484 Ω,
+
+|Z| = 2.902 Ω,
+
+If,2 =
+
+Vph
+= 2188.6 A.
+|Z|
+
+(5)
+
+If,3 = 1297.2 A.
+
+(6)
+
+Three-phase fault at Bus 3 (end of Line 2).
+Z = jXs + ZL1 + ZL2 = 2.7 + j4.084 Ω,
+
+|Z| = 4.896 Ω,
+
+(2ϕ)
+
+√
+
+Minimum fault current. A phase-to-phase fault at Bus 3 gives If,3 = 23 If,3 = 1123.4 A.
+All pick-up settings must be below this value so that the relays still see the weakest fault.
+Table 2: Summary of calculated currents.
+Case
+
+Current (A)
+
+Load current through R1
+Load current through R2
+3-phase fault at Bus 2 (maximum seen by R2)
+3-phase fault at Bus 3
+2-phase fault at Bus 3 (minimum)
+2
+
+367.4
+209.9
+2188.6
+1297.2
+1123.4
+
+5
+
+Relay Settings
+
+5.1
+
+Plug setting
+
+The pick-up is set to about 125 % of the maximum load current and must stay below the
+minimum fault current. PS is chosen in steps of 0.05.
+
+R2:
+R1:
+
+262.4
+= 0.875 → 0.90,
+300
+459.3
+1.25 × 367.4 = 459.3 A ⇒ PS =
+= 0.765 → 0.80,
+600
+1.25 × 209.9 = 262.4 A ⇒ PS =
+
+Ipu = 0.90 × 300 = 270 A,
+Ipu = 0.80 × 600 = 480 A.
+
+Both pick-ups are below the minimum fault current of 1123.4 A.
+
+5.2
+
+Time multiplier setting
+
+The downstream relay R2 is given the lowest practical value TMS2 = 0.10. Coordination is
+checked at the maximum fault current seen by R2, which is the fault just beyond R2 (If,2 =
+2188.6 A), because the two inverse curves are closest together at high current.
+0.14
+= 0.328 s,
+(2188.6/270)0.02 − 1
+tR1,req = 0.328 + 0.3 = 0.628 s,
+0.628
+0.628
+TMS1 =
+=
+= 0.138 → 0.150 (rounded up to a 0.025 step).
+0.14/ [(2188.6/480)0.02 − 1]
+4.544
+tR2 = 0.10 ×
+
+Table 3: Final relay settings.
+Relay
+
+CT ratio
+
+PS
+
+Pick-up (A)
+
+TMS
+
+R1 (Line 1 primary, Line 2 backup)
+R2 (Line 2 primary)
+
+600/1
+300/1
+
+0.80
+0.90
+
+480
+270
+
+0.150
+0.100
+
+Note on the design process. A first version of the MATLAB program sized TMS1 at the
+far end of Line 2 (Bus 3). That gave TMS1 = 0.125 and a CTI of only 0.240 s for faults near R2,
+which violates the 0.3 s requirement. Moving the coordination point to the maximum-current
+location (just beyond R2) removed the violation; the results below are for the corrected design.
+
+6
+
+Results and Verification
+
+6.1
+
+Operating times
+Table 4: Relay operating times for different faults.
+Fault location
+
+If (A)
+
+tR2 (s)
+
+tR1 (s)
+
+CTI (s)
+
+Just beyond R2 (3-ph)
+Bus 3 (3-ph)
+Bus 3 (2-ph, minimum)
+
+2188.6
+1297.2
+1123.4
+
+0.328
+0.439
+0.484
+
+0.682
+1.046
+1.224
+
+0.354
+0.607
+0.740
+
+For a fault at Bus 1 end of Line 1 (≈ 12.6 kA), R1 operates in about 0.31 s. For a fault at the
+Bus 2 busbar, R1 is the primary relay and trips in 0.682 s.
+3
+
+6.2
+
+Fault sweep along the feeders
+
+The fault position was swept along both lines and the operating times of R1 and R2 were
+computed at each point (Fig. 2). The minimum CTI over all faults on Line 2 is 0.354 s (occurring
+at the Bus 2 end) and it increases towards Bus 3, so the requirement CTI ≥ 0.3 s is satisfied
+everywhere on Line 2.
+
+Figure 2: Fault current along the feeders (top) and operating times of R2, R1 and the resulting
+CTI for faults on Line 2 (bottom).
+
+6.3
+
+Time–current characteristics
+
+Fig. 3 shows the two IDMT curves. R2 lies below R1 over the whole fault-current range, so for
+any fault on Line 2 the relay R2 operates first.
+
+4
+
+Figure 3: Time–current characteristics of R1 (backup) and R2 (primary).
+
+6.4
+
+Time-domain simulation
+
+A three-phase fault was applied at Bus 3 at t = 0.5 s. Each relay is modelled as a disk integrator
+that accumulates ∆t/top (I) while the current is above pick-up and trips when the integrator
+reaches 1. The circuit breaker opens 0.05 s after the trip command.
+ R2 trips 0.439 s after fault inception, which matches the analytical value of 0.439 s.
+ The fault is cleared at t = 0.989 s, after which the current through R1 falls to the Bus 2
+load current (157.5 A, below pick-up).
+ R1 reaches only about 47 % of its operating travel and does not trip, so only Line 2 is
+isolated and Bus 2 keeps supply.
+
+5
+
+Figure 4: Time-domain simulation: RMS currents (top), disk-integrator states (middle) and trip
+signals (bottom).
+
+7
+
+Discussion
+ Both pick-up currents are above 125 % of normal load, so the relays do not trip on load,
+and below the minimum fault current, so they pick up for the weakest fault.
+ The most critical coordination point is the high-current fault just beyond R2, where the
+two characteristics are closest. Coordinating at the far-end fault only is not sufficient.
+ R1 takes 0.68 s to clear a fault at the Bus 2 busbar. This is acceptable for a simple radial
+feeder, but the slow clearing near the source can be reduced by adding an instantaneous
+(high-set) element on R1 set above the maximum fault current at Bus 2.
+ Limitations: the study neglects fault resistance, CT saturation, DC offset and earth faults,
+and uses RMS phasor values rather than an electromagnetic transient model.
+
+8
+
+Conclusion
+
+An IDMT (IEC Standard Inverse) overcurrent protection scheme was designed for a 3-bus radial
+system. Relay R2 was set to PS = 0.90, TMS = 0.10 and relay R1 to PS = 0.80, TMS = 0.15.
+6
+
+Calculations, a fault sweep along both feeders and a time-domain simulation confirm that R2
+clears Line 2 faults first, R1 acts as backup, and the minimum coordination time interval is
+0.354 s, which is greater than the required 0.3 s.
+
+7
+
+

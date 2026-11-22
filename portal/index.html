@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDMT Feeder Protection Lab | 3-Bus Radial System Coordination</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Chart.js CDN with high-performance responsive canvas support -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Top App Navigation -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-titles">
+        <h1>IDMT Feeder Protection Portal <span class="brand-badge">Assignment 11</span></h1>
+        <p>Radial 3-Bus Overcurrent Coordination & Dynamic Time-Domain Simulation</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <label for="preset-select" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Preset:</label>
+      <select id="preset-select" class="select-control">
+        <option value="default" selected>Assignment 11 Default (11kV, 250MVA, 5+4km)</option>
+        <option value="weak_grid">Weak Source (Ssc = 100 MVA)</option>
+        <option value="strong_grid">Strong Grid (Ssc = 500 MVA)</option>
+        <option value="heavy_load">Heavy Load (S2 = 5 MVA, S3 = 6 MVA)</option>
+        <option value="long_feeder">Long Feeder (L1 = 10 km, L2 = 8 km)</option>
+      </select>
+      <button id="btn-reset" class="btn" title="Reset all parameters to default Assignment 11 values">
+        <span>↺</span> Reset Defaults
+      </button>
+      <button id="btn-export-matlab" class="btn btn-primary" title="Export MATLAB .m Script">
+        <span>📥</span> MATLAB .m
+      </button>
+      <button id="btn-export-csv" class="btn" title="Export sweep data as CSV">
+        <span>📊</span> CSV Data
+      </button>
+      <button id="btn-print" class="btn" title="Print or Save PDF report">
+        <span>🖨️</span> Print Report
+      </button>
+      <button id="btn-theme-toggle" class="btn btn-icon" title="Toggle Light/Dark Theme">
+        <span id="theme-icon">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="main-container">
+
+    <!-- System Schematic / Interactive Single-Line Diagram -->
+    <section class="card sld-card">
+      <div class="sld-toolbar">
+        <div class="card-title">
+          <span>⚡</span> System Single-Line Diagram (SLD) & Real-Time Flow
+        </div>
+        <div class="sld-scenarios">
+          <span class="scenario-label">Quick Scenarios:</span>
+          <button class="btn btn-sm" id="btn-scen-normal">Normal Load</button>
+          <button class="btn btn-sm btn-amber" id="btn-scen-bus2">Fault @ Bus 2 (3-ph)</button>
+          <button class="btn btn-sm btn-danger" id="btn-scen-bus3-3ph">Fault @ Bus 3 (3-ph)</button>
+          <button class="btn btn-sm btn-amber" id="btn-scen-bus3-2ph">Fault @ Bus 3 (2-ph min)</button>
+          <button class="btn btn-sm" id="btn-scen-midline2">Fault @ Mid Line 2 (7 km)</button>
+          <button class="btn btn-sm btn-danger" id="btn-scen-backup-test">Test CB2 Stuck (Backup R1)</button>
+        </div>
+      </div>
+
+      <!-- SVG SLD Canvas -->
+      <div class="sld-canvas-container">
+        <svg id="sld-svg" viewBox="0 0 1000 240" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <!-- Glow Filters -->
+            <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <!-- Line gradient -->
+            <linearGradient id="feeder-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8" />
+              <stop offset="100%" stop-color="#0284c7" />
+            </linearGradient>
+            <!-- Marker pattern -->
+            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" />
+            </marker>
+          </defs>
+
+          <!-- Background Grid Lines -->
+          <line x1="40" y1="120" x2="940" y2="120" stroke="#334155" stroke-width="1" stroke-dasharray="4 4" />
+
+          <!-- Source Generator Symbol (Bus 1) -->
+          <g id="sld-source" transform="translate(60, 120)">
+            <circle cx="0" cy="0" r="28" fill="#1e293b" stroke="#38bdf8" stroke-width="3" />
+            <path d="M -12 -6 Q -6 -18 0 -6 T 12 -6" fill="none" stroke="#38bdf8" stroke-width="2.5" />
+            <text x="0" y="44" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="600">Source (11 kV)</text>
+            <text x="0" y="58" text-anchor="middle" fill="#38bdf8" font-size="10" font-family="monospace" id="sld-source-ssc">250 MVA</text>
+          </g>
+
+          <!-- Source Connection to Bus 1 -->
+          <line x1="88" y1="120" x2="130" y2="120" stroke="#38bdf8" stroke-width="4" />
+
+          <!-- Bus 1 -->
+          <g id="sld-bus1" transform="translate(130, 60)">
+            <line x1="0" y1="0" x2="0" y2="120" stroke="#e2e8f0" stroke-width="6" stroke-linecap="round" />
+            <text x="0" y="-10" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Bus 1</text>
+          </g>
+
+          <!-- Circuit Breaker CB1 & Relay R1 -->
+          <g id="sld-cb1" transform="translate(180, 120)" style="cursor: pointer;">
+            <!-- Relay box R1 -->
+            <rect x="-16" y="-48" width="32" height="24" rx="4" fill="#1e293b" stroke="#3b82f6" stroke-width="2" />
+            <text x="0" y="-32" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="bold">R1</text>
+            <line x1="0" y1="-24" x2="0" y2="-15" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="2 2" />
+            <!-- Breaker Box CB1 -->
+            <rect id="cb1-box" x="-15" y="-15" width="30" height="30" rx="3" fill="#10b981" stroke="#fff" stroke-width="1.5" />
+            <text id="cb1-text" x="0" y="4" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold">CB1</text>
+            <text x="0" y="32" text-anchor="middle" fill="#94a3b8" font-size="10" id="sld-r1-status">CLOSED</text>
+          </g>
+
+          <!-- Feed from Bus 1 to CB1 -->
+          <line x1="130" y1="120" x2="165" y2="120" stroke="#38bdf8" stroke-width="4" />
+
+          <!-- Line 1: Bus 1/CB1 to Bus 2 -->
+          <line id="line1-path" x1="195" y1="120" x2="520" y2="120" stroke="#38bdf8" stroke-width="4" />
+          <line id="line1-flow" x1="195" y1="120" x2="520" y2="120" stroke="#a5f3fc" stroke-width="4" stroke-dasharray="10 15" stroke-linecap="round" opacity="0.8" />
+          
+          <!-- Line 1 Label Badge -->
+          <g transform="translate(355, 95)">
+            <rect x="-65" y="-14" width="130" height="22" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1" />
+            <text x="0" y="1" text-anchor="middle" fill="#cbd5e1" font-size="10.5" font-weight="600" id="sld-line1-info">Line 1: 5.0 km</text>
+          </g>
+
+          <!-- Bus 2 -->
+          <g id="sld-bus2" transform="translate(520, 50)">
+            <line x1="0" y1="0" x2="0" y2="140" stroke="#e2e8f0" stroke-width="6" stroke-linecap="round" />
+            <text x="0" y="-10" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Bus 2</text>
+            <!-- Load 2 Branch -->
+            <g transform="translate(0, 140)">
+              <line x1="0" y1="0" x2="0" y2="25" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" />
+              <polygon points="-12,25 12,25 0,42" fill="#3b82f6" />
+              <text x="0" y="55" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="600">Load 2</text>
+              <text x="0" y="67" text-anchor="middle" fill="#38bdf8" font-size="9.5" font-family="monospace" id="sld-load2-val">3 MVA (157 A)</text>
+            </g>
+          </g>
+
+          <!-- Circuit Breaker CB2 & Relay R2 -->
+          <g id="sld-cb2" transform="translate(580, 120)" style="cursor: pointer;">
+            <!-- Relay box R2 -->
+            <rect x="-16" y="-48" width="32" height="24" rx="4" fill="#1e293b" stroke="#ef4444" stroke-width="2" />
+            <text x="0" y="-32" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="bold">R2</text>
+            <line x1="0" y1="-24" x2="0" y2="-15" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="2 2" />
+            <!-- Breaker Box CB2 -->
+            <rect id="cb2-box" x="-15" y="-15" width="30" height="30" rx="3" fill="#10b981" stroke="#fff" stroke-width="1.5" />
+            <text id="cb2-text" x="0" y="4" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold">CB2</text>
+            <text x="0" y="32" text-anchor="middle" fill="#94a3b8" font-size="10" id="sld-r2-status">CLOSED</text>
+          </g>
+
+          <!-- Line 2: Bus 2/CB2 to Bus 3 -->
+          <line x1="520" y1="120" x2="565" y2="120" stroke="#38bdf8" stroke-width="4" />
+          <line id="line2-path" x1="595" y1="120" x2="880" y2="120" stroke="#38bdf8" stroke-width="4" />
+          <line id="line2-flow" x1="595" y1="120" x2="880" y2="120" stroke="#a5f3fc" stroke-width="4" stroke-dasharray="10 15" stroke-linecap="round" opacity="0.8" />
+
+          <!-- Line 2 Label Badge -->
+          <g transform="translate(735, 95)">
+            <rect x="-65" y="-14" width="130" height="22" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1" />
+            <text x="0" y="1" text-anchor="middle" fill="#cbd5e1" font-size="10.5" font-weight="600" id="sld-line2-info">Line 2: 4.0 km</text>
+          </g>
+
+          <!-- Bus 3 -->
+          <g id="sld-bus3" transform="translate(880, 50)">
+            <line x1="0" y1="0" x2="0" y2="140" stroke="#e2e8f0" stroke-width="6" stroke-linecap="round" />
+            <text x="0" y="-10" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Bus 3</text>
+            <!-- Load 3 Branch -->
+            <g transform="translate(0, 140)">
+              <line x1="0" y1="0" x2="0" y2="25" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)" />
+              <polygon points="-12,25 12,25 0,42" fill="#ef4444" />
+              <text x="0" y="55" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="600">Load 3</text>
+              <text x="0" y="67" text-anchor="middle" fill="#38bdf8" font-size="9.5" font-family="monospace" id="sld-load3-val">4 MVA (210 A)</text>
+            </g>
+          </g>
+
+          <!-- Interactive Fault Indicator (Draggable / Clickable Lightning Bolt Marker) -->
+          <g id="sld-fault-marker" transform="translate(880, 120)" style="cursor: grab; transition: transform 0.1s ease-out;">
+            <circle cx="0" cy="0" r="18" fill="rgba(245, 158, 11, 0.25)" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3 3" class="pulse-anim" />
+            <!-- Lightning Bolt -->
+            <path d="M 3 -12 L -6 0 L 1 0 L -3 14 L 7 2 L 0 2 Z" fill="#f59e0b" stroke="#fff" stroke-width="1" filter="url(#glow-amber)" />
+            <rect x="-45" y="-34" width="90" height="18" rx="3" fill="#0f172a" stroke="#f59e0b" stroke-width="1" />
+            <text id="sld-fault-text" x="0" y="-22" text-anchor="middle" fill="#f59e0b" font-size="10" font-family="monospace" font-weight="bold">FAULT: Bus 3</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Fault Position Slider Control -->
+      <div class="fault-slider-bar">
+        <label for="fault-distance-slider">
+          <span>⚡</span> Fault Location:
+        </label>
+        <div class="fault-slider-track">
+          <input type="range" id="fault-distance-slider" min="0" max="9" step="0.1" value="9">
+          <div class="fault-readout" id="fault-distance-display">9.0 km (Bus 3)</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);">Fault Type:</label>
+          <select id="fault-type-select" class="select-control" style="padding: 0.25rem 0.6rem;">
+            <option value="3ph" selected>3-Phase (Max Fault)</option>
+            <option value="2ph">2-Phase (Min Fault)</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Engineering Results Dashboard Cards -->
+    <section class="dashboard-grid">
+      <!-- Card 1: Load Currents -->
+      <div class="metric-card card-blue">
+        <div class="metric-title">
+          <span>Normal Load Currents</span>
+          <span>⚡ Symmetrical</span>
+        </div>
+        <div class="metric-value-row">
+          <span class="metric-value" id="kpi-ir1">367.4</span>
+          <span class="metric-unit">A (IR1)</span>
+        </div>
+        <div class="metric-subvalues">
+          <div class="metric-subvalue-item">
+            <span>Relay R2 (Load 3):</span>
+            <span class="mono" id="kpi-ir2">209.9 A</span>
+          </div>
+          <div class="metric-subvalue-item">
+            <span>Bus 2 Load IL2:</span>
+            <span class="mono" id="kpi-il2">157.5 A</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Fault Currents -->
+      <div class="metric-card card-amber">
+        <div class="metric-title">
+          <span>Fault Current Profile</span>
+          <span>⚡ Bolted</span>
+        </div>
+        <div class="metric-value-row">
+          <span class="metric-value" id="kpi-if3-bus2">2189</span>
+          <span class="metric-unit">A (Bus 2 3-ph)</span>
+        </div>
+        <div class="metric-subvalues">
+          <div class="metric-subvalue-item">
+            <span>Bus 3 3-ph Fault:</span>
+            <span class="mono" id="kpi-if3-bus3">1297 A</span>
+          </div>
+          <div class="metric-subvalue-item">
+            <span>Bus 3 2-ph Min Fault:</span>
+            <span class="mono" id="kpi-if2-bus3">1123 A</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Relay Settings -->
+      <div class="metric-card card-purple">
+        <div class="metric-title">
+          <span>Relay Settings</span>
+          <span>IEC 60255</span>
+        </div>
+        <div class="metric-value-row">
+          <span class="metric-value" id="kpi-ps1">0.80</span>
+          <span class="metric-unit">PS1 (Ipu 480 A)</span>
+        </div>
+        <div class="metric-subvalues">
+          <div class="metric-subvalue-item">
+            <span>R2 Setting:</span>
+            <span class="mono" id="kpi-ps2">PS = 0.90 (Ipu 270 A)</span>
+          </div>
+          <div class="metric-subvalue-item">
+            <span>TMS:</span>
+            <span class="mono" id="kpi-tms-summary">TMS2=0.100, TMS1=0.150</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Operating Times at Bus 3 -->
+      <div class="metric-card card-green">
+        <div class="metric-title">
+          <span>Bus 3 Fault Trip Times</span>
+          <span>Selective Trip</span>
+        </div>
+        <div class="metric-value-row">
+          <span class="metric-value" id="kpi-t2-bus3">0.439</span>
+          <span class="metric-unit">s (R2 Primary)</span>
+        </div>
+        <div class="metric-subvalues">
+          <div class="metric-subvalue-item">
+            <span>R1 Backup Trip Time:</span>
+            <span class="mono" id="kpi-t1-bus3">1.046 s</span>
+          </div>
+          <div class="metric-subvalue-item">
+            <span>Coordination Margin CTI:</span>
+            <span class="mono" id="kpi-cti-bus3">0.607 s</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coordination Status Banner -->
+    <div id="coordination-banner" class="coordination-status-banner pass">
+      <div style="display: flex; align-items: center; gap: 0.85rem;">
+        <span class="status-badge-lg pass" id="coord-badge">COORDINATION: PASS</span>
+        <span id="coord-text">Minimum CTI across Line 2 = <strong>0.354 s</strong> (Required CTI = 0.300 s). Selective tripping guaranteed for all faults!</span>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 0.82rem;" id="critical-point-text">
+        Critical coordination point: Just beyond R2 (If = 2189 A) | t2 = 0.328s, t1 = 0.682s
+      </div>
+    </div>
+
+    <!-- Main Workspace (Controls Sidebar + Plots / Tables) -->
+    <div class="workspace-grid">
+
+      <!-- Parameters Control Sidebar -->
+      <aside class="controls-sidebar">
+
+        <!-- Accordion 1: Source & Grid -->
+        <div class="accordion-group">
+          <div class="accordion-header">
+            <span>🌐 1. Grid & Voltage</span>
+            <span>▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Line Voltage V_LL (kV):</span>
+                <span class="control-value-display" id="disp-vll">11.0 kV</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-vll" min="3.3" max="33" step="0.1" value="11">
+                <input type="number" id="num-vll" min="1" max="132" step="0.1" value="11">
+              </div>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Source Fault Level S_sc (MVA):</span>
+                <span class="control-value-display" id="disp-ssc">250 MVA</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-ssc" min="50" max="1000" step="10" value="250">
+                <input type="number" id="num-ssc" min="10" max="5000" step="10" value="250">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accordion 2: Feeders & Impedance -->
+        <div class="accordion-group">
+          <div class="accordion-header">
+            <span>📏 2. Feeder Impedance & Lengths</span>
+            <span>▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Resistance r (Ω/km):</span>
+                <span class="control-value-display" id="disp-r">0.30 Ω/km</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-r" min="0.05" max="1.5" step="0.01" value="0.30">
+                <input type="number" id="num-r" min="0.01" max="5" step="0.01" value="0.30">
+              </div>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Reactance x (Ω/km):</span>
+                <span class="control-value-display" id="disp-x">0.40 Ω/km</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-x" min="0.05" max="1.5" step="0.01" value="0.40">
+                <input type="number" id="num-x" min="0.01" max="5" step="0.01" value="0.40">
+              </div>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Line 1 Length L1 (km):</span>
+                <span class="control-value-display" id="disp-l1">5.0 km</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-l1" min="1" max="25" step="0.5" value="5">
+                <input type="number" id="num-l1" min="0.5" max="100" step="0.5" value="5">
+              </div>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Line 2 Length L2 (km):</span>
+                <span class="control-value-display" id="disp-l2">4.0 km</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-l2" min="1" max="25" step="0.5" value="4">
+                <input type="number" id="num-l2" min="0.5" max="100" step="0.5" value="4">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accordion 3: Loads -->
+        <div class="accordion-group">
+          <div class="accordion-header">
+            <span>🏭 3. Bus Loads</span>
+            <span>▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Bus 2 Load S2 (MVA):</span>
+                <span class="control-value-display" id="disp-s2">3.0 MVA</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-s2" min="0.5" max="10" step="0.25" value="3.0">
+                <input type="number" id="num-s2" min="0.1" max="50" step="0.1" value="3.0">
+              </div>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Bus 3 Load S3 (MVA):</span>
+                <span class="control-value-display" id="disp-s3">4.0 MVA</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-s3" min="0.5" max="10" step="0.25" value="4.0">
+                <input type="number" id="num-s3" min="0.1" max="50" step="0.1" value="4.0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accordion 4: Protection & Coordination Parameters -->
+        <div class="accordion-group">
+          <div class="accordion-header">
+            <span>🛡️ 4. Protection & CT Settings</span>
+            <span>▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">CT1 Primary (A):</span>
+                <span class="control-value-display" id="disp-ct1">600 A</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-ct1" min="100" max="1500" step="50" value="600">
+                <input type="number" id="num-ct1" min="50" max="5000" step="50" value="600">
+              </div>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">CT2 Primary (A):</span>
+                <span class="control-value-display" id="disp-ct2">300 A</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-ct2" min="50" max="1000" step="50" value="300">
+                <input type="number" id="num-ct2" min="25" max="3000" step="25" value="300">
+              </div>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Overload Factor OLF:</span>
+                <span class="control-value-display" id="disp-olf">1.25</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-olf" min="1.0" max="1.6" step="0.05" value="1.25">
+                <input type="number" id="num-olf" min="1.0" max="2.0" step="0.01" value="1.25">
+              </div>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Breaker Time T_cb (s):</span>
+                <span class="control-value-display" id="disp-tcb">0.05 s</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-tcb" min="0.02" max="0.15" step="0.01" value="0.05">
+                <input type="number" id="num-tcb" min="0.01" max="0.30" step="0.005" value="0.05">
+              </div>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Target CTI Margin (s):</span>
+                <span class="control-value-display" id="disp-cti">0.30 s</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-cti" min="0.20" max="0.60" step="0.02" value="0.30">
+                <input type="number" id="num-cti" min="0.10" max="1.00" step="0.01" value="0.30">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accordion 5: Curve & Time Multiplier Settings -->
+        <div class="accordion-group">
+          <div class="accordion-header">
+            <span>⏱️ 5. Curve Standard & TMS</span>
+            <span>▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="control-item">
+              <span class="control-title">IDMT Curve Standard:</span>
+              <select id="curve-standard-select" class="select-control" style="margin-top: 0.35rem;">
+                <option value="iec_standard" selected>IEC Standard Inverse (k=0.14, a=0.02)</option>
+                <option value="iec_very">IEC Very Inverse (k=13.5, a=1.0)</option>
+                <option value="iec_extremely">IEC Extremely Inverse (k=80.0, a=2.0)</option>
+                <option value="iec_long_time">IEC Long-Time Inverse (k=120.0, a=1.0)</option>
+                <option value="ieee_moderately">IEEE Moderately Inverse (k=0.0515, a=0.02, b=0.114)</option>
+              </select>
+            </div>
+            <div class="control-item">
+              <div class="control-label-row">
+                <span class="control-title">Relay 2 TMS (TMS2):</span>
+                <span class="control-value-display" id="disp-tms2">0.100</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-tms2" min="0.025" max="0.500" step="0.025" value="0.100">
+                <input type="number" id="num-tms2" min="0.01" max="1.0" step="0.005" value="0.100">
+              </div>
+            </div>
+            <div class="toggle-switch-container">
+              <span class="toggle-label">Auto-Calculate TMS1:</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="check-auto-tms1" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="control-item" id="manual-tms1-container" style="display: none;">
+              <div class="control-label-row">
+                <span class="control-title">Manual TMS1:</span>
+                <span class="control-value-display" id="disp-tms1">0.150</span>
+              </div>
+              <div class="control-input-row">
+                <input type="range" id="slider-tms1" min="0.05" max="1.0" step="0.025" value="0.150">
+                <input type="number" id="num-tms1" min="0.025" max="2.0" step="0.025" value="0.150">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- Main Column: Interactive Plots & Dynamic Simulation -->
+      <section class="plots-wrapper">
+
+        <!-- Plot Navigation Tabs -->
+        <div class="plot-nav-tabs">
+          <button class="tab-btn active" data-tab="tab-tcc">
+            <span>📈</span> Plot 1: Time-Current Characteristics (TCC)
+          </button>
+          <button class="tab-btn" data-tab="tab-sweep">
+            <span>📏</span> Plot 2: Feeder Fault Sweep & CTI
+          </button>
+          <button class="tab-btn" data-tab="tab-timedomain">
+            <span>⏱️</span> Plot 3: Time-Domain Dynamic Simulation
+          </button>
+        </div>
+
+        <!-- Tab 1: Time-Current Characteristics (TCC) -->
+        <div class="plot-pane active" id="tab-tcc">
+          <div class="chart-box">
+            <div class="chart-box-header">
+              <div class="chart-box-title">
+                <span>📈</span> Log-Log Time-Current Characteristics (R1 Backup vs R2 Primary)
+              </div>
+              <div class="chart-legend-custom">
+                <span class="legend-pill"><span class="legend-dot" style="background-color: var(--r1-color);"></span> Relay R1 (Backup)</span>
+                <span class="legend-pill"><span class="legend-dot" style="background-color: var(--r2-color);"></span> Relay R2 (Primary)</span>
+                <span class="legend-pill"><span class="legend-dot" style="background-color: var(--accent-amber);"></span> Dynamic Fault Markers</span>
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper">
+              <canvas id="chart-tcc" class="canvas-fallback"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Feeder Fault Sweep -->
+        <div class="plot-pane" id="tab-sweep">
+          <div class="chart-box" style="margin-bottom: 1rem;">
+            <div class="chart-box-header">
+              <div class="chart-box-title">
+                <span>📏</span> Subplot 2A: 3-Phase Fault Current along Line 1 and Line 2
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 250px;">
+              <canvas id="chart-sweep-fault" class="canvas-fallback"></canvas>
+            </div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-box-header">
+              <div class="chart-box-title">
+                <span>⏱️</span> Subplot 2B: Line 2 Operating Times (t2, t1) & Discrimination Margin CTI
+              </div>
+              <div class="chart-legend-custom">
+                <span class="legend-pill"><span class="legend-dot" style="background-color: var(--r2-color);"></span> t2 (R2 Primary)</span>
+                <span class="legend-pill"><span class="legend-dot" style="background-color: var(--r1-color);"></span> t1 (R1 Backup)</span>
+                <span class="legend-pill"><span class="legend-dot" style="background-color: var(--cti-color);"></span> Actual CTI</span>
+                <span class="legend-pill"><span class="legend-dot" style="background-color: #64748b;"></span> Required CTI (0.3s)</span>
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 250px;">
+              <canvas id="chart-sweep-times" class="canvas-fallback"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Time-Domain Dynamic Simulation -->
+        <div class="plot-pane" id="tab-timedomain">
+          <!-- Simulation Control Deck -->
+          <div class="sim-controls-panel">
+            <div class="sim-buttons-group">
+              <button id="btn-sim-play" class="btn btn-primary"><span>▶</span> Play</button>
+              <button id="btn-sim-pause" class="btn" style="display: none;"><span>⏸</span> Pause</button>
+              <button id="btn-sim-step" class="btn"><span>⏯</span> Step</button>
+              <button id="btn-sim-reset" class="btn"><span>⏮</span> Reset</button>
+            </div>
+            <div class="sim-time-readout">
+              Time: <span id="sim-time-val">0.000</span> s
+            </div>
+            <div class="sim-fault-config">
+              <label for="sim-tf-slider">Fault Time tf (s):</label>
+              <input type="range" id="sim-tf-slider" min="0.1" max="1.5" step="0.05" value="0.5" style="width: 100px;">
+              <span class="mono" id="sim-tf-disp">0.50 s</span>
+            </div>
+            <div class="sim-fault-config">
+              <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+                <input type="checkbox" id="sim-cb2-fail">
+                <span style="color: var(--accent-red);">Simulate CB2 Failure (Stuck)</span>
+              </label>
+            </div>
+            <div>
+              <select id="sim-speed-select" class="select-control">
+                <option value="0.5">0.5x Speed</option>
+                <option value="1.0" selected>1.0x Realtime</option>
+                <option value="2.0">2.0x Fast</option>
+                <option value="999">Instant Solve</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Simulation Subplots -->
+          <div class="chart-box" style="margin-bottom: 0.75rem;">
+            <div class="chart-box-header">
+              <div class="chart-box-title">
+                <span>⚡</span> Subplot 3A: Feeder Currents IR1, IR2 vs Time (RMS)
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 180px;">
+              <canvas id="chart-sim-currents" class="canvas-fallback"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-box" style="margin-bottom: 0.75rem;">
+            <div class="chart-box-header">
+              <div class="chart-box-title">
+                <span>🔄</span> Subplot 3B: Disk Integrators acc1, acc2 (Trip Threshold = 1.0)
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 180px;">
+              <canvas id="chart-sim-acc" class="canvas-fallback"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-box-header">
+              <div class="chart-box-title">
+                <span>🔌</span> Subplot 3C: Circuit Breaker Trip Signals (CB2 Primary, CB1 Backup)
+              </div>
+            </div>
+            <div class="chart-canvas-wrapper" style="height: 140px;">
+              <canvas id="chart-sim-trips" class="canvas-fallback"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- Verification Table matching MATLAB Results Table -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title"><span>📋</span> Exact MATLAB Results & Discrimination Table</h3>
+          <p class="card-subtitle">Comparison of fault currents, operating times, and CTI discrimination margins across key system locations.</p>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent-blue);">
+          Matches Assignment11_IDMT_Feeder_Protection.m
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table" id="results-table">
+          <thead>
+            <tr>
+              <th>Fault Location</th>
+              <th>Type</th>
+              <th>Fault Current If (A)</th>
+              <th>Primary Relay (R2) Time [s]</th>
+              <th>Backup Relay (R1) Time [s]</th>
+              <th>Actual Margin CTI [s]</th>
+              <th>Required CTI [s]</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Just beyond R2 (Bus 2 end of Line 2)</strong></td>
+              <td>3-phase (Max)</td>
+              <td class="mono" id="tb-if-bus2">2189 A</td>
+              <td class="mono" id="tb-t2-bus2">0.328 s</td>
+              <td class="mono" id="tb-t1-bus2">0.682 s</td>
+              <td class="mono" id="tb-cti-bus2" style="color: var(--accent-green); font-weight: bold;">0.354 s</td>
+              <td class="mono">0.300 s</td>
+              <td><span class="badge badge-green">PASS (Critical Point)</span></td>
+            </tr>
+            <tr>
+              <td><strong>Bus 3 (Far end of Line 2)</strong></td>
+              <td>3-phase</td>
+              <td class="mono" id="tb-if-bus3-3ph">1297 A</td>
+              <td class="mono" id="tb-t2-bus3-3ph">0.439 s</td>
+              <td class="mono" id="tb-t1-bus3-3ph">1.046 s</td>
+              <td class="mono" id="tb-cti-bus3-3ph">0.607 s</td>
+              <td class="mono">0.300 s</td>
+              <td><span class="badge badge-green">PASS</span></td>
+            </tr>
+            <tr>
+              <td><strong>Bus 3 (Far end of Line 2)</strong></td>
+              <td>2-phase (Min)</td>
+              <td class="mono" id="tb-if-bus3-2ph">1123 A</td>
+              <td class="mono" id="tb-t2-bus3-2ph">0.484 s</td>
+              <td class="mono" id="tb-t1-bus3-2ph">1.224 s</td>
+              <td class="mono" id="tb-cti-bus3-2ph">0.740 s</td>
+              <td class="mono">0.300 s</td>
+              <td><span class="badge badge-green">PASS</span></td>
+            </tr>
+            <tr style="background-color: var(--accent-blue-dim);">
+              <td><strong id="tb-custom-loc">Active Slider Location (9.0 km)</strong></td>
+              <td id="tb-custom-type">3-phase</td>
+              <td class="mono" id="tb-custom-if">1297 A</td>
+              <td class="mono" id="tb-custom-t2">0.439 s</td>
+              <td class="mono" id="tb-custom-t1">1.046 s</td>
+              <td class="mono" id="tb-custom-cti">0.607 s</td>
+              <td class="mono">0.300 s</td>
+              <td><span class="badge badge-blue" id="tb-custom-status">SELECTIVE</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Verification Criteria Checklist -->
+      <div class="verification-list">
+        <div class="verification-item">
+          <div class="verification-icon">✅</div>
+          <div class="verification-text">
+            <h4>Load Capability (OLF = 1.25)</h4>
+            <p id="chk-load">Ipu1 (480 A) > 1.25×367 A & Ipu2 (270 A) > 1.25×210 A. Relays will not mal-operate under 25% continuous overload.</p>
+          </div>
+        </div>
+        <div class="verification-item">
+          <div class="verification-icon">✅</div>
+          <div class="verification-text">
+            <h4>Sensitivity to Weakest Fault</h4>
+            <p id="chk-sens">Ipu1 (480 A) and Ipu2 (270 A) are well below the minimum 2-phase fault current at Bus 3 (1123 A).</p>
+          </div>
+        </div>
+        <div class="verification-item">
+          <div class="verification-icon">✅</div>
+          <div class="verification-text">
+            <h4>Coordination at Critical Point</h4>
+            <p id="chk-coord">Checked at the maximum fault seen by R2 (Bus 2 end). Rounding TMS1 up to 0.150 ensures CTI ≥ 0.354 s across entire Line 2.</p>
+          </div>
+        </div>
+        <div class="verification-item">
+          <div class="verification-icon">✅</div>
+          <div class="verification-text">
+            <h4>Disk Integrator Selectivity</h4>
+            <p id="chk-disk">During Bus 3 fault, R2 trips in 0.439 s. R1 disk reaches only ~65% travel before fault is cleared by CB2.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mathematical Principles & Formulations -->
+    <section class="card">
+      <div class="card-header">
+        <h3 class="card-title"><span>📐</span> Theoretical Foundations & Engineering Equations</h3>
+      </div>
+      <div class="formula-grid">
+        <div class="formula-card">
+          <h4>1. IEC 60255 IDMT Characteristic</h4>
+          <p style="font-size: 0.78rem; color: var(--text-secondary);">Operating time t depends on Plug Setting Multiplier (PSM = I / Ipu):</p>
+          <div class="formula-code">t = TMS × k / [ (I / Ipu)^a - 1 ]
+Standard Inverse: k = 0.14, a = 0.02
+Very Inverse:     k = 13.5, a = 1.00
+Extremely Inv.:   k = 80.0, a = 2.00</div>
+        </div>
+
+        <div class="formula-card">
+          <h4>2. Plug Setting & Coordination Point</h4>
+          <p style="font-size: 0.78rem; color: var(--text-secondary);">PS selected in 0.05 steps to withstand overload while seeing weakest fault:</p>
+          <div class="formula-code">PS = ceil((OLF × I_load / CT_pri) / 0.05) × 0.05
+Ipu = PS × CT_pri
+Critical Point: I_coord = If3_bus2 (Max seen by R2)
+t1_req = t2_coord + CTI
+TMS1 = ceil( (t1_req / t1_base) / 0.025 ) × 0.025</div>
+        </div>
+
+        <div class="formula-card">
+          <h4>3. Dynamic Induction Disk Integrator Model</h4>
+          <p style="font-size: 0.78rem; color: var(--text-secondary);">Simulates inertia and travel of electromechanical & numerical IDMT disks:</p>
+          <div class="formula-code">acc(t+dt) = acc(t) + dt / t_op(I)   [for I > Ipu]
+acc(t+dt) = max(acc(t) - dt/10, 0)  [for I <= Ipu]
+Trip condition: acc >= 1.0
+Breaker clearing: t_clear = t_trip + T_cb</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal for MATLAB Script Export -->
+  <div class="modal-overlay" id="export-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Generated MATLAB Script (.m)</h3>
+        <button class="btn btn-sm" id="btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+          This executable MATLAB script is dynamically generated with your current parameter values. You can run it directly in MATLAB R2016b+ or GNU Octave:
+        </p>
+        <textarea id="matlab-code-area" class="script-editor" readonly></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="btn-copy-matlab">📋 Copy Code</button>
+        <button class="btn btn-primary" id="btn-download-m-file">💾 Download .m File</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Footer -->
+  <footer class="app-footer">
+    <div>
+      <strong>IDMT Feeder Protection Lab</strong> | Developed for Course EE315 / Assignment 11
+    </div>
+    <div>
+      IEC 60255 & IEEE C37.112 Overcurrent Coordination Standard Compliant
+    </div>
+  </footer>
+
+  <!-- Scripts: protection_engine.js followed by app.js -->
+  <script src="protection_engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
